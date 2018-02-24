@@ -1,0 +1,12 @@
+{
+    "name": "tablepoints",
+    "authors": [
+        "majiang"
+    ],
+    "dependencies": {
+        "vibe-d": "~>0.7.30"
+    },
+    "description": "Online Table Point Simulator.",
+    "copyright": "Copyright (c) 2018, majiang",
+    "license": "Unlicense"
+}

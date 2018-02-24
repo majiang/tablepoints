@@ -1,0 +1,16 @@
+.dub
+dub.selections.json
+docs.json
+__dummy.html
+docs/
+tablepoints.so
+tablepoints.dylib
+tablepoints.dll
+tablepoints.a
+tablepoints.lib
+tablepoints-test-*
+*.exe
+*.o
+*.obj
+*.lst
+/*.dll
