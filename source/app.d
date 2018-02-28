@@ -1,17 +1,49 @@
 import vibe.vibe;
 
+import std.conv : to;
+
 void main()
 {
-    auto settings = new HTTPServerSettings;
-    settings.port = 8080;
-    settings.bindAddresses = ["::1", "127.0.0.1"];
-    listenHTTP(settings, &hello);
+    import std.process : environment;
 
-    logInfo("Please open http://127.0.0.1:8080/ in your browser.");
+    auto settings = new HTTPServerSettings;
+    settings.port = environment.get("PORT", "8080").to!ushort;
+    settings.sessionStore = new MemorySessionStore;
+
+    auto router = new URLRouter;
+    router.registerWebInterface(new Simulation);
+
+    listenHTTP(settings, router);
+
     runApplication();
 }
 
-void hello(HTTPServerRequest req, HTTPServerResponse res)
+class Simulation
 {
-    res.writeBody("Hello, World!");
+    void index()
+    {
+        bool hasResult = _hasResult;
+        string result = _result;
+        render!("index.dt", hasResult, result);
+    }
+    void postQuery(
+            size_t fixed, size_t random, size_t ggp,
+            size_t tables, size_t position, size_t trial)
+    {
+        import std.range : repeat;
+        import std.array : array;
+        import tablepoints;
+        auto simulator = new Simulator(new MCRTablePoint);
+        simulator.positions = [position];
+        simulator.initialScore = 0.repeat(tables * 4).array;
+        scope (success)
+            _hasResult = true;
+        _result = simulator.simulate(
+                fixed, random, ggp, trial)
+                .to!string;
+        "/".redirect;
+    }
+private:
+    SessionVar!(bool, "hasResult") _hasResult;
+    SessionVar!(string, "result")_result;
 }

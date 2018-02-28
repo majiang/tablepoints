@@ -138,7 +138,7 @@ void displayResult(
 abstract class TablePoint
 {
     immutable int denominator;
-    immutable int tableSize;
+    immutable size_t tableSize;
     immutable int[] basePoints;
     this (in int denominator, in size_t tableSize, in int[] basePoints)
     {

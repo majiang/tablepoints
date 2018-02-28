@@ -1,0 +1,6 @@
+doctype html
+html
+    head
+        link(rel="stylesheet", href="https://unpkg.com/purecss@1.0.0/build/pure-min.css")
+    body
+        block body
