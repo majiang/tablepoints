@@ -3,30 +3,4 @@ extends layout
 block body
     h1 Table Point Simulator
     div
-        h2 Query:
-        form(action="query", method="POST")
-            ul
-                li
-                    label(for="fixed") fixed sessions:
-                    input(type="text", name="fixed")
-                li
-                    label(for="random") random sessions:
-                    input(type="text", name="random")
-                li
-                    label(for="ggp") ggp sessions:
-                    input(type="text", name="ggp")
-                li
-                    label(for="tables") number of tables:
-                    input(type="text", name="tables")
-                li
-                    label(for="position") interested position:
-                    input(type="text", name="position")
-                li
-                    label(for="trial") trials:
-                    input(type="text", name="trial")
-                li
-                    button(type="submit") Simulate
-    - if (hasResult)
-        div
-            h2 Result:
-            div #{result}
+    script(src="/js/client.js")

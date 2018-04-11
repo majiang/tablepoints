@@ -3,18 +3,51 @@ module tablepoints;
 import std.random : randomShuffle;
 import std.algorithm : sort;
 
+import tablepoints.api;
+class SimulationImpl : Simulation
+{
+    import std.format : format;
+    import std.random : uniform;
+    string putSimulation(
+            size_t fixed, size_t random, size_t ggp,
+            double[] initialScore, size_t position,
+            string rule)
+    {
+        immutable id = uniform!ulong;
+        return "%016x".format(id);
+    }
+    string putFlatSimulation(
+            size_t fixed, size_t random, size_t ggp,
+            size_t tables, size_t position,
+            string rule)
+    {
+        immutable id = uniform!ulong;
+        return "%016x".format(id);
+    }
+    SimulationResult getSimulationResult(string id)
+    {
+        return SimulationResult.init;
+    }
+}
+
 class Simulator
 {
     this (TablePoint tp)
     {
         this.tp = tp;
     }
-    void initialScore(int[] values) @property
+    void tables(in size_t value) @property
     {
-        _initialScore = values.dup;
-        _initialScore[] /= tp.denominator;
+        _tables = value;
+        _initialScore = new int[_tables*tp.tableSize];
+        currentScore.length = _initialScore.length;
+    }
+    void initialScore(real[] values) @property
+    {
+        import std.algorithm, std.array, std.conv, std.math;
+        _initialScore = values.map!(_ => (_*tp.denominator+.5).floor.to!int).array;
         currentScore.length = values.length;
-        tables = values.length / tp.tableSize;
+        _tables = values.length / tp.tableSize;
     }
     void positions(size_t[] values) @property
     {
@@ -42,6 +75,13 @@ class Simulator
         simulateRandom(random);
         simulateGGP(ggp);
         return denominate;
+    }
+package:
+    void initialScore(int[] values) @property
+    {
+        _initialScore = values.dup;
+        currentScore.length = values.length;
+        _tables = values.length / tp.tableSize;
     }
 private:
     real[] denominate()
@@ -72,7 +112,7 @@ private:
     }
     void simulateTables()
     {
-        foreach (t; 0..tables)
+        foreach (t; 0.._tables)
             currentScore[t*tp.tableSize .. (t+1)*tp.tableSize][] += tp.random[];
     }
     int[] slice()
@@ -89,7 +129,7 @@ private:
     int[] currentScore;
     int[] sliced;
     real[] denominated;
-    size_t tables;
+    size_t _tables;
 }
 unittest
 {
