@@ -2,8 +2,9 @@ module tablepoints.api;
 
 struct SimulationResult
 {
-    SimulationCondition condition;
     ResultElem[] result;
+    SimulationCondition condition;
+    bool finished;
 }
 struct SimulationCondition
 {

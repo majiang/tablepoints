@@ -2,5 +2,37 @@ extends layout
 
 block body
     h1 Table Point Simulator
-    div
+    form(name="condition")
+        table: tbody
+            tr
+                td
+                    rule set:
+                td
+                    input(name="rule", type="radio", value="MCR", checked="checked", id="rule-MCR")
+                    label(for="rule-MCR") MCR (4210)
+                    input(name="rule", type="radio", value="RCR", id="rule-RCR")
+                    label(for="rule-RCR") RCR (3210)
+            tr
+                td: label(for="fixed") fixed sessions:
+                td: input(name="fixed", type="number", value="0")
+            tr
+                td: label(for="random") random sessions:
+                td: input(name="random", type="number", value="0")
+            tr
+                td: label(for="ggp") ggp sessions:
+                td: input(name="ggp", type="number", value="0")
+            tr
+                td: label(for="position") position to simulate (0-origin):
+                td: input(name="position", type="number")
+            tr
+                td: label(for="tables") tables (choice / initial):
+                td
+                    input(name="tables", type="number")
+                    input(onclick="putFlatSimulation()", type="button")
+            tr
+                td: label(for="initial") tables (choice / tables):
+                td
+                    textarea(name="initial")
+                    input(onclick="putSimulation()", type="button")
+    div(id="show_result")
     script(src="/js/client.js")

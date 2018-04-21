@@ -1,33 +1,120 @@
 module tablepoints;
 
 import std.random : randomShuffle;
-import std.algorithm : sort;
+import std.algorithm, std.range;
+
+__gshared SimulationResult[string] results;
 
 import tablepoints.api;
 class SimulationImpl : Simulation
 {
     import std.format : format;
     import std.random : uniform;
+    import std.concurrency : spawn;
     string putSimulation(
             size_t fixed, size_t random, size_t ggp,
             double[] initialScore, size_t position,
             string rule)
     {
-        immutable id = uniform!ulong;
-        return "%016x".format(id);
+        immutable id = "%016x".format(uniform!ulong);
+        spawn(  &simulateAndStore,
+                id,
+                fixed, random, ggp,
+                initialScore.idup, position, rule);
+        return id;
     }
     string putFlatSimulation(
             size_t fixed, size_t random, size_t ggp,
             size_t tables, size_t position,
             string rule)
     {
-        immutable id = uniform!ulong;
-        return "%016x".format(id);
+        return putSimulation(
+                fixed, random, ggp,
+                double(0).repeat(tables*4).array, position,
+                rule);
     }
     SimulationResult getSimulationResult(string id)
     {
-        return SimulationResult.init;
+        if (auto p = id in results)
+        {
+            debug
+            {
+                import std.stdio;
+                stderr.writefln("found");
+            }
+            return *p;
+        }
+        else debug
+        {
+            import std.stdio;
+            stderr.writefln("not found");
+        }
+        return SimulationResult.init; // TODO: return 404
     }
+}
+
+unittest
+{
+    auto s = new SimulationImpl;
+    s.putFlatSimulation(
+            0, 8, 0,
+            8, 1, "MCR");
+    s.putFlatSimulation(
+            0, 0, 8,
+            8, 1, "MCR");
+    import core.thread : Thread;
+    import core.time : seconds;
+    Thread.sleep(10.seconds);
+}
+
+void simulateAndStore(
+        string id,
+        size_t fixed, size_t random, size_t ggp,
+        immutable(double)[] initialScore, size_t position,
+        string rule)
+{
+    auto simulator = new Simulator(rule.tablePoint);
+    simulator.initialScore = initialScore;
+    simulator.positions = [position];
+    auto condition = SimulationCondition(rule, initialScore.dup, fixed, random, ggp, position);
+    enum trialPerExec = 10000;
+    enum execs = 100;
+    size_t[immutable(real[])] ret;
+    results[id] = ret.asResult(condition);
+    debug
+    {
+        import std.stdio : stderr;
+        stderr.writefln("%s: %s", id, results[id]);
+    }
+    foreach (i; 0..execs)
+    {
+        results[id] = ret.updateAdd(simulator.simulate(fixed, random, ggp, trialPerExec)).asResult(condition);
+        assert (results[id].result.map!(_=>_.count).sum == trialPerExec*(i+1));
+        debug
+        {
+            import std.stdio : stderr;
+            stderr.writefln("%dth batch of %s: %s", i, id, results[id]);
+        }
+    }
+    results[id].finished = true;
+}
+
+V[K] updateAdd(K, V)(ref V[K] lhs, in V[K] rhs)
+{
+    foreach (kvp; rhs.byKeyValue)
+    {
+        if (kvp.key in lhs)
+            lhs[kvp.key] += kvp.value;
+        else
+            lhs[kvp.key] = kvp.value;
+    }
+    return lhs;
+}
+
+SimulationResult asResult(K, V)(V[K] resultAA, SimulationCondition condition)
+{
+    auto result = resultAA.byPair.map!(_=> ResultElem(_.key[0], _.value)).array;
+    return SimulationResult(result, condition);
 }
 
 class Simulator
@@ -42,7 +129,8 @@ class Simulator
         _initialScore = new int[_tables*tp.tableSize];
         currentScore.length = _initialScore.length;
     }
-    void initialScore(real[] values) @property
+    void initialScore(FR)(in FR values) @property
+        if (isInputRange!FR && is (ElementType!FR : real))
     {
         import std.algorithm, std.array, std.conv, std.math;
         _initialScore = values.map!(_ => (_*tp.denominator+.5).floor.to!int).array;
@@ -225,9 +313,19 @@ class RCRTablePoint : TablePoint
     }
 }
 
+TablePoint tablePoint(string name)
+{
+    import std.uni : toUpper;
+    if (name.toUpper.startsWith("MCR"))
+        return new MCRTablePoint;
+    if (name.toUpper.startsWith("RCR"))
+        return new RCRTablePoint;
+    return null;
+}
+
 unittest
 {
     import std.stdio;
-    assert ((new MCRTablePoint).displayPoints == [4, 2, 1, 0]);
-    assert ((new RCRTablePoint).displayPoints == [3, 2, 1, 0]);
+    assert ("MCR".tablePoint.displayPoints == [4, 2, 1, 0]);
+    assert ("RCR".tablePoint.displayPoints == [3, 2, 1, 0]);
 }
